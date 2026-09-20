@@ -1,25 +1,29 @@
-name: Compilar PSeInt APK
+name: Build APK
 ​on:
 push:
-branches: [ main, master ]
 workflow_dispatch:
 ​jobs:
 build:
-name: Compilar APK
 runs-on: ubuntu-latest
 steps:
 - uses: actions/checkout@v4
-- uses: actions/setup-node@v4
+​- uses: actions/setup-node@v4
 with:
 node-version: 20
-- uses: actions/setup-java@v4
+​- uses: actions/setup-java@v4
 with:
 distribution: zulu
 java-version: 17
-- name: Preparar y Compilar APK
-run: npm init -y && npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 && mkdir -p www && cp index.html www/index.html && npx cap init PSeInt com.aethell.pseint --web-dir=www && npx cap add android && cd android && chmod +x gradlew && ./gradlew assembleDebug
-- name: Subir APK
-uses: actions/upload-artifact@v4
+​- run: npm init -y
+​- run: npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+​- run: mkdir -p www
+​- run: cp index.html www/
+​- run: npx cap init PSeInt com.aethell.pseint --web-dir www
+​- run: npx cap add android
+​- run: chmod +x android/gradlew
+​- run: ./gradlew assembleDebug
+working-directory: android
+​- uses: actions/upload-artifact@v4
 with:
 name: PSeInt-APK
-path: android/app/build/outputs/apk/debug/app-debug.apk
+path: android/app/build/outputs/apk/debug/*.apk
