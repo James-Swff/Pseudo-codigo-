@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PSeInt - Aethell Labs</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Metadatos de Aplicación Nativa para Android -->
+  <meta name="theme-color" content="#090d16">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PSeInt">
+  <meta name="application-name" content="PSeInt">
+  <link id="manifest-placeholder" rel="manifest">
+
+  <style>
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    .watermark-pattern {
+      background-image: radial-gradient(rgba(99, 102, 241, 0.12) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .flow-svg text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 600;
+      fill: #0f172a;
+    }
+
+    .ns-diagram table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 450px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      background: white;
+      color: #0f172a;
+      border: 2px solid #0f172a;
+    }
+
+    .ns-diagram td, .ns-diagram th {
+      border: 1px solid #334155;
+      padding: 6px 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden select-none">
+
+  <header class="h-14 border-b border-slate-800 bg-slate-900/95 backdrop-blur px-3 sm:px-4 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center font-black text-white shadow-md shadow-indigo-600/30 text-base tracking-wider border border-white/20">
+        Ψ
+      </div>
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span class="font-extrabold text-white tracking-tight text-base sm:text-lg">PSeInt</span>
+          <span class="px-1.5 py-0.5 text-[9px] font-black rounded bg-indigo-950 text-indigo-300 border border-indigo-700/60">
+            AETHELL LABS
+          </span>
+        </div>
+        <p class="text-[10px] text-slate-400 hidden sm:block">Entorno Autónomo Universitario para Android</p>
+      </div>
+    </div>
+
+    <!-- Navegación de escritorio -->
+    <div class="hidden md:flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/60 text-xs font-medium">
+      <button id="tab-editor-btn" onclick="switchTab('editor')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white flex items-center gap-1.5 transition-all">
+        <i data-lucide="code-2" class="w-4 h-4"></i>
+        <span>Editor & Diagrama</span>
+      </button>
+      <button id="tab-challenges-btn" onclick="switchTab('challenges')" class="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white flex items-center gap-1.5 transition-all">
+        <i data-lucide="trophy" class="w-4 h-4"></i>
+        <span>Retos Académicos</span>
+      </button>
+    </div>
+
+    <!-- Acciones de cabecera -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <label class="cursor-pointer p-2 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5" title="Abrir .psc">
+        <i data-lucide="folder-open" class="w-4 h-4 text-amber-400"></i>
+        <span class="hidden lg:inline">Abrir .psc</span>
+        <input type="file" id="file-input-psc" accept=".psc,.txt" class="hidden" onchange="handleOpenLocalFile(event)">
+      </label>
+
+      <button onclick="downloadPscFile()" class="p-2 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5" title="Guardar .psc">
+        <i data-lucide="save" class="w-4 h-4 text-indigo-400"></i>
+        <span class="hidden lg:inline">Guardar .psc</span>
+      </button>
+
+      <button onclick="openAITutorModal()" class="p-2 sm:px-2.5 sm:py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-purple-900/30">
+        <i data-lucide="sparkles" class="w-4 h-4 text-yellow-300"></i>
+        <span class="hidden sm:inline">Tutor IA</span>
+      </button>
+
+      <button onclick="shareDirectAndroid()" class="p-2 sm:px-2.5 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-900/30" title="Compartir">
+        <i data-lucide="share-2" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">WhatsApp</span>
+      </button>
+
+      <button onclick="openExportModal()" class="p-2 sm:px-2.5 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-900/30">
+        <i data-lucide="file-down" class="w-4 h-4 text-white"></i>
+        <span class="hidden sm:inline">Informe PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative" id="workspace-view">
+    
+    <!-- PANEL DEL EDITOR -->
+    <section id="pane-editor" class="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/60 relative h-full">
+      <div class="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="file-code" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span class="text-xs font-bold text-slate-300">algoritmo.psc</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="template-select" onchange="loadTemplate(this.value)" class="bg-slate-800 text-slate-200 text-[11px] rounded-lg border border-slate-700 px-2 py-1 focus:outline-none">
+            <option value="">Plantillas...</option>
+            <option value="secuencial">U1: Secuencial</option>
+            <option value="condicional">U2: Si-Entonces</option>
+            <option value="segun">U2: Según (Múltiple)</option>
+            <option value="repetitiva_para">U3: Ciclo Para</option>
+            <option value="repetitiva_mientras">U3: Ciclo Mientras</option>
+          </select>
+          <button onclick="executeCode()" class="px-3 py-1 rounded-lg bg-emerald-600 active:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm">
+            <i data-lucide="play" class="w-3 h-3 fill-current"></i>
+            <span>Ejecutar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="h-10 bg-slate-900/95 border-b border-slate-800 px-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 select-none text-[11px] font-mono">
+        <button onclick="insertAtCursor(' <- ')" class="px-2.5 py-1 rounded bg-slate-800 text-amber-300 font-black border border-slate-700 active:scale-95">&lt;-</button>
+        <button onclick="insertAtCursor(';')" class="px-2.5 py-1 rounded bg-slate-800 text-indigo-300 font-black border border-slate-700 active:scale-95">;</button>
+        <button onclick="insertAtCursor('&quot;&quot;')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700 active:scale-95">&quot;&quot;</button>
+        <button onclick="insertAtCursor('Definir  Como Entero;')" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700 active:scale-95">Definir</button>
+        <button onclick="insertAtCursor('Leer ')" class="px-2.5 py-1 rounded bg-slate-800 text-sky-300 font-bold border border-slate-700 active:scale-95">Leer</button>
+        <button onclick="insertAtCursor('Escribir &quot;&quot;;')" class="px-2.5 py-1 rounded bg-slate-800 text-emerald-300 font-bold border border-slate-700 active:scale-95">Escribir</button>
+        <button onclick="insertAtCursor('Si  Entonces\n    \nSiNo\n    \nFinSi')" class="px-2.5 py-1 rounded bg-slate-800 text-purple-300 font-bold border border-slate-700 active:scale-95">Si-No</button>
+        <button onclick="insertAtCursor('Para i <- 1 Hasta 10 Con Paso 1 Hacer\n    \nFinPara')" class="px-2.5 py-1 rounded bg-slate-800 text-pink-300 font-bold border border-slate-700 active:scale-95">Para</button>
+        <button onclick="insertAtCursor('Mientras  Hacer\n    \nFinMientras')" class="px-2.5 py-1 rounded bg-slate-800 text-orange-300 font-bold border border-slate-700 active:scale-95">Mientras</button>
+        <button onclick="insertAtCursor('Segun  Hacer\n    1:\n    De Otro Modo:\nFinSegun')" class="px-2.5 py-1 rounded bg-slate-800 text-teal-300 font-bold border border-slate-700 active:scale-95">Según</button>
+        <button onclick="insertAtCursor(' >= ')" class="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">&gt;=</button>
+        <button onclick="insertAtCursor(' <= ')" class="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">&lt;=</button>
+        <button onclick="insertAtCursor(' <> ')" class="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">&lt;&gt;</button>
+        <button onclick="insertAtCursor(' Y ')" class="px-2 py-1 rounded bg-slate-800 text-teal-300 font-bold border border-slate-700">Y</button>
+        <button onclick="insertAtCursor(' O ')" class="px-2 py-1 rounded bg-slate-800 text-teal-300 font-bold border border-slate-700">O</button>
+        <button onclick="insertAtCursor(' NO ')" class="px-2 py-1 rounded bg-slate-800 text-teal-300 font-bold border border-slate-700">NO</button>
+      </div>
+
+      <!-- Área del editor de texto con numeración de líneas -->
+      <div class="flex-1 flex overflow-hidden relative">
+        <div id="line-numbers" class="w-10 py-2.5 bg-slate-950 text-right pr-2 select-none text-slate-600 font-mono text-xs leading-6 border-r border-slate-800">
+          1
+        </div>
+        <textarea id="code-editor" spellcheck="false" oninput="handleCodeInput()" onscroll="syncScroll()" class="flex-1 p-2.5 bg-slate-950 font-mono text-xs text-indigo-100 resize-none outline-none leading-6 selection:bg-indigo-700 selection:text-white watermark-pattern" placeholder="// Escribe tu algoritmo en PSeInt aquí..."></textarea>
+      </div>
+
+      <div id="desktop-console-dock" class="hidden md:flex h-44 border-t border-slate-800 bg-slate-950 flex-col">
+        <div class="h-7 bg-slate-900/80 px-3 flex items-center justify-between border-b border-slate-800 text-[11px]">
+          <span class="font-bold text-slate-300 flex items-center gap-1">
+            <i data-lucide="terminal" class="w-3 h-3 text-emerald-400"></i>
+            Consola y Prueba de Escritorio
+          </span>
+          <button onclick="clearConsole()" class="text-slate-400 hover:text-slate-200 text-[10px]">Limpiar</button>
+        </div>
+        <div class="flex-1 grid grid-cols-2 divide-x divide-slate-800 overflow-hidden">
+          <div id="terminal-output-desktop" class="p-2.5 font-mono text-xs text-emerald-300 overflow-y-auto space-y-1">
+            <div class="text-slate-500">// Presiona "Ejecutar" para interactuar.</div>
+          </div>
+          <div class="overflow-y-auto p-2 bg-slate-900/20">
+            <table class="w-full text-[11px] font-mono text-left">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th class="py-1">Variable</th>
+                  <th class="py-1">Tipo</th>
+                  <th class="py-1 text-right">Valor Final</th>
+                </tr>
+              </thead>
+              <tbody id="trace-table-body-desktop">
+                <tr><td colspan="3" class="py-2 text-center text-slate-600">Sin datos</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pane-diagram" class="hidden md:flex flex-1 flex-col bg-slate-900/40 relative h-full">
+      <div class="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-1.5">
+          <i data-lucide="git-fork" class="w-3.5 h-3.5 text-purple-400"></i>
+          <span class="text-xs font-bold text-slate-300">Diagrama PSeInt</span>
+          <select id="diagram-type-select" onchange="toggleDiagramType(this.value)" class="bg-slate-800 text-emerald-400 border border-slate-700 text-[10px] rounded px-1.5 py-0.5 font-mono">
+            <option value="flow">Flujo (DIN/ANSI)</option>
+            <option value="ns">Nassi-Shneiderman (N-S)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button onclick="zoomDiagram(0.15)" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center text-xs font-bold active:scale-95">+</button>
+          <button onclick="zoomDiagram(-0.15)" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center text-xs font-bold active:scale-95">-</button>
+          <button onclick="resetDiagramZoom()" class="px-2 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs">100%</button>
+          <button onclick="renderFlowchart()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+            <span class="hidden sm:inline">Actualizar</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="diagram-scroll-container" class="flex-1 overflow-auto p-4 sm:p-6 relative flex items-start justify-center bg-slate-950 watermark-pattern">
+        <!-- Marca de agua de fondo Aethell Labs -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-[0.04]">
+          <div class="text-5xl sm:text-6xl font-black tracking-widest text-white rotate-[-30deg] text-center uppercase">
+            PSEINT MOBILE<br><span class="text-2xl sm:text-3xl">AETHELL LABS</span>
+          </div>
+        </div>
+
+        <div id="flowchart-container" class="transition-transform duration-150 origin-top">
+          <!-- Lienzo dinámico -->
+        </div>
+      </div>
+    </section>
+
+    <section id="pane-console" class="hidden flex-1 flex-col bg-slate-950 h-full">
+      <div class="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+          <i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-400"></i>
+          Consola y Terminal PSeInt
+        </span>
+        <button onclick="clearConsole()" class="px-2 py-1 rounded-lg bg-slate-800 text-slate-300 text-[11px]">Limpiar</button>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <div id="terminal-output" class="flex-1 p-3 font-mono text-xs text-emerald-300 overflow-y-auto space-y-1.5 bg-slate-950">
+          <div class="text-slate-500">// Presiona "Ejecutar" en el editor para iniciar.</div>
+        </div>
+        <div class="h-48 border-t border-slate-800 p-2.5 overflow-y-auto bg-slate-900/40">
+          <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
+            <i data-lucide="table" class="w-3 h-3 text-indigo-400"></i>
+            Prueba de Escritorio (Seguimiento de Variables)
+          </div>
+          <table class="w-full text-[11px] font-mono text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-1">Variable</th>
+                <th class="py-1">Tipo</th>
+                <th class="py-1 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody id="trace-table-body">
+              <tr><td colspan="3" class="py-2 text-center text-slate-600">Sin datos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <section id="challenges-view" class="flex-1 overflow-y-auto p-4 sm:p-6 hidden bg-slate-950 pb-20 md:pb-6">
+    <div class="max-w-4xl mx-auto space-y-6">
+      
+      <div class="bg-gradient-to-r from-indigo-900/50 via-purple-900/30 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
+            <i data-lucide="award" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">Retos Académicos Universitarios</h2>
+            <p class="text-xs text-indigo-200">Alineados con el sílabo oficial de Algoritmos y Estructuras</p>
+          </div>
+        </div>
+        <button onclick="runAutoTestForCurrent()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow">
+          <i data-lucide="check-circle" class="w-4 h-4 text-emerald-300"></i>
+          <span>Validar Código Actual</span>
+        </button>
+      </div>
+
+      <div id="test-results-banner" class="hidden p-3 rounded-xl border bg-slate-900/90 text-xs font-mono"></div>
+
+      <!-- Unidad 1: Semanas 1 a 6 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
+              Semanas 1 a 6
+            </span>
+            <h3 class="text-base font-bold text-white mt-1">Unidad 1: Estructuras Secuenciales</h3>
+            <p class="text-xs text-slate-400">Entradas, salidas, asignaciones y expresiones aritméticas.</p>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 pt-1">
+          <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-indigo-300">Reto 1: Salario Neto y Descuentos</div>
+              <p class="text-[11px] text-slate-400 mt-1">Calcula el salario neto ingresando horas y tarifa, aplicando un 10% de descuento de ley.</p>
+            </div>
+            <button onclick="loadChallenge('u1_salario')" class="mt-3 w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Cargar al Editor
+            </button>
+          </div>
+          <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-indigo-300">Reto 2: Conversión de Temperatura</div>
+              <p class="text-[11px] text-slate-400 mt-1">Convierte grados Celsius a Fahrenheit y Kelvin utilizando las fórmulas secuenciales.</p>
+            </div>
+            <button onclick="loadChallenge('u1_temp')" class="mt-3 w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Cargar al Editor
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unidad 2: Semanas 7 a 12 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+              Semanas 7 a 12
+            </span>
+            <h3 class="text-base font-bold text-white mt-1">Unidad 2: Estructuras Condicionales</h3>
+            <p class="text-xs text-slate-400">Si-Entonces simple, doble, anidado y selector múltiple (Según).</p>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 pt-1">
+          <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-purple-300">Reto 3: Clasificación de Rendimiento Académico</div>
+              <p class="text-[11px] text-slate-400 mt-1">Recibe la nota de un examen (0 a 20) y clasifica al alumno: Excelente, Bueno, Regular o Reprobado.</p>
+            </div>
+            <button onclick="loadChallenge('u2_notas')" class="mt-3 w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Cargar al Editor
+            </button>
+          </div>
+          <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-purple-300">Reto 4: Menú de Operaciones con Según</div>
+              <p class="text-[11px] text-slate-400 mt-1">Menú de 3 operaciones aritméticas con 2 números usando la estructura Según.</p>
+            </div>
+            <button onclick="loadChallenge('u2_menu')" class="mt-3 w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Cargar al Editor
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unidad 3: Semanas 13 a 18 -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              Semanas 13 a 18
+            </span>
+            <h3 class="text-base font-bold text-white mt-1">Unidad 3: Estructuras Repetitivas</h3>
+            <p class="text-xs text-slate-400">Bucles Para (contador), Mientras y Repetir-Hasta Que.</p>
+          </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 pt-1">
+          <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-emerald-300">Reto 5: Conteo de Pares e Impares (Para)</div>
+              <p class="text-[11px] text-slate-400 mt-1">Evalúa N números mediante un ciclo Para y calcula el total de pares e impares.</p>
+            </div>
+            <button onclick="loadChallenge('u3_pares')" class="mt-3 w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Cargar al Editor
+            </button>
+          </div>
+          <div class="bg-slate-950 border border-slate-800/80 p-3.5 rounded-xl flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-emerald-300">Reto 6: Validación de Clave (Mientras)</div>
+              <p class="text-[11px] text-slate-400 mt-1">Solicita una clave secreta permitiendo un máximo de 3 intentos con bucle Mientras.</p>
+            </div>
+            <button onclick="loadChallenge('u3_clave')" class="mt-3 w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5">
+              <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Cargar al Editor
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div id="interactive-input-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center gap-2 text-indigo-400">
+        <i data-lucide="corner-down-right" class="w-5 h-5"></i>
+        <h3 class="text-sm font-bold text-white">Entrada PSeInt (Instrucción Leer)</h3>
+      </div>
+      <p id="input-modal-prompt" class="text-xs text-slate-300 font-mono">Ingrese valor:</p>
+      <input id="input-modal-value" type="text" autofocus class="w-full bg-slate-950 border border-indigo-500 rounded-xl px-3 py-2.5 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/50" placeholder="Escribe el valor aquí...">
+      <button id="input-modal-submit-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30">
+        Continuar Ejecución
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL TUTOR IA -->
+  <div id="ai-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 hidden">
+    <div class="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Tutor IA - Aethell Academic</h3>
+            <p class="text-[11px] text-slate-400">Asistente pedagógico para cursos de Algoritmia</p>
+          </div>
+        </div>
+        <button onclick="closeModal('ai-modal')" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="px-3 py-2 bg-slate-800/40 border-b border-slate-800 flex flex-wrap gap-1.5 text-xs">
+        <button onclick="askAI('explicar_error')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 text-[11px]">
+          <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-400"></i> ¿Por qué falla?
+        </button>
+        <button onclick="askAI('pistas')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 text-[11px]">
+          <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-yellow-400"></i> Solo pistas
+        </button>
+        <button onclick="askAI('traducir_cpp')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 text-[11px]">
+          <i data-lucide="arrow-right-left" class="w-3.5 h-3.5 text-indigo-400"></i> A C++
+        </button>
+        <button onclick="askAI('traducir_py')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 text-[11px]">
+          <i data-lucide="arrow-right-left" class="w-3.5 h-3.5 text-emerald-400"></i> A Python
+        </button>
+      </div>
+
+      <div id="ai-chat-body" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs text-slate-200">
+        <div class="flex gap-2.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+          <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center shrink-0 text-white text-[10px]">
+            Ψ
+          </div>
+          <div class="space-y-1 leading-relaxed">
+            <p class="font-bold text-purple-300">¡Hola! Soy tu tutor de algoritmia de Aethell Labs.</p>
+            <p class="text-slate-400">Pregúntame dudas sobre lógica, bucles o presiona los botones superiores para analizar tu código en vivo.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-slate-800 bg-slate-950 flex gap-2">
+        <input id="ai-user-prompt" type="text" placeholder="Escribe tu consulta sobre algoritmia..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+        <button onclick="askAICustom()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <span>Preguntar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EXPORTAR PDF -->
+  <div id="export-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+            <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Exportar Informe Universitario</h3>
+            <p class="text-[11px] text-slate-400">Genera PDF formal con membrete y marca de agua Aethell Labs</p>
+          </div>
+        </div>
+        <button onclick="closeModal('export-modal')" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Nombre del Estudiante</label>
+          <input id="pdf-student-name" type="text" value="Alumno Universitario" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Curso / Asignatura</label>
+            <input id="pdf-course" type="text" value="Algoritmos y Estructuras" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Unidad o Reto</label>
+            <input id="pdf-week" type="text" value="Semana 08 - Unidad 2" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+          </div>
+        </div>
+        <div class="flex items-center gap-2 pt-1">
+          <input id="pdf-watermark-check" type="checkbox" checked class="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-0">
+          <label for="pdf-watermark-check" class="text-slate-300">Incluir marca de agua oficial <span class="font-bold text-indigo-400">AETHELL LABS</span></label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="closeModal('export-modal')" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs">Cancelar</button>
+        <button id="download-pdf-btn" onclick="generateAcademicPDF()" class="px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Descargar PDF Listo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="md:hidden h-14 bg-slate-900/95 border-t border-slate-800 grid grid-cols-5 z-40 shrink-0 select-none">
+    <button onclick="switchTab('editor')" id="bnav-editor" class="flex flex-col items-center justify-center gap-0.5 text-indigo-400">
+      <i data-lucide="code-2" class="w-4 h-4"></i>
+      <span class="text-[10px] font-bold">Editor</span>
+    </button>
+    <button onclick="switchTab('diagram')" id="bnav-diagram" class="flex flex-col items-center justify-center gap-0.5 text-slate-400">
+      <i data-lucide="git-fork" class="w-4 h-4"></i>
+      <span class="text-[10px]">Diagrama</span>
+    </button>
+    <button onclick="switchTab('console')" id="bnav-console" class="flex flex-col items-center justify-center gap-0.5 text-slate-400">
+      <i data-lucide="terminal" class="w-4 h-4"></i>
+      <span class="text-[10px]">Consola</span>
+    </button>
+    <button onclick="switchTab('challenges')" id="bnav-challenges" class="flex flex-col items-center justify-center gap-0.5 text-slate-400">
+      <i data-lucide="trophy" class="w-4 h-4"></i>
+      <span class="text-[10px]">Retos</span>
+    </button>
+    <button onclick="openAITutorModal()" class="flex flex-col items-center justify-center gap-0.5 text-purple-400">
+      <i data-lucide="sparkles" class="w-4 h-4"></i>
+      <span class="text-[10px]">Tutor IA</span>
+    </button>
+  </nav>
+
+  <script>
+    let diagramZoom = 1;
+    let activeTab = 'editor';
+    let currentDiagramType = 'flow';
+
+    const defaultAlgorithm = `Algoritmo CalificacionFinal
+    // Desarrollado con PSeInt Mobile - Aethell Labs
+    Definir nota1, nota2, nota3, promedio Como Real;
+    Definir estado Como Cadena;
+
+    Escribir "Ingrese la Nota 1 (0-20):";
+    Leer nota1;
+    Escribir "Ingrese la Nota 2 (0-20):";
+    Leer nota2;
+    Escribir "Ingrese la Nota 3 (0-20):";
+    Leer nota3;
+
+    promedio <- (nota1 + nota2 + nota3) / 3;
+
+    Si promedio >= 11.5 Entonces
+        estado <- "Aprobado";
+        Escribir "Felicitaciones, resultado: ", estado;
+    SiNo
+        estado <- "Desaprobado";
+        Escribir "Debes recuperar, resultado: ", estado;
+    FinSi
+
+    Escribir "Promedio final obtenido: ", promedio;
+FinAlgoritmo`;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setupDynamicManifest();
+      registerOfflineServiceWorker();
+
+      const savedCode = localStorage.getItem('pseint_mobile_code');
+      document.getElementById('code-editor').value = savedCode || defaultAlgorithm;
+
+      updateLineNumbers();
+      lucide.createIcons();
+      renderFlowchart();
+    });
+
+    function switchTab(tab) {
+      activeTab = tab;
+      const workspace = document.getElementById('workspace-view');
+      const challenges = document.getElementById('challenges-view');
+      const paneEditor = document.getElementById('pane-editor');
+      const paneDiagram = document.getElementById('pane-diagram');
+      const paneConsole = document.getElementById('pane-console');
+      const isMobile = window.innerWidth < 768;
+
+      ['editor', 'diagram', 'console', 'challenges'].forEach(t => {
+        const btn = document.getElementById(`bnav-${t}`);
+        if (btn) {
+          if (t === tab) {
+            btn.className = "flex flex-col items-center justify-center gap-0.5 text-indigo-400 font-bold";
+          } else {
+            btn.className = "flex flex-col items-center justify-center gap-0.5 text-slate-400";
+          }
+        }
+      });
+
+      if (tab === 'challenges') {
+        workspace.classList.add('hidden');
+        challenges.classList.remove('hidden');
+      } else {
+        workspace.classList.remove('hidden');
+        challenges.classList.add('hidden');
+
+        if (isMobile) {
+          paneEditor.classList.add('hidden');
+          paneDiagram.classList.add('hidden');
+          paneConsole.classList.add('hidden');
+
+          if (tab === 'editor') {
+            paneEditor.classList.remove('hidden');
+          } else if (tab === 'diagram') {
+            paneDiagram.classList.remove('hidden');
+            renderFlowchart();
+          } else if (tab === 'console') {
+            paneConsole.classList.remove('hidden');
+          }
+        } else {
+          paneEditor.classList.remove('hidden');
+          paneDiagram.classList.remove('hidden');
+          paneConsole.classList.add('hidden');
+        }
+      }
+      lucide.createIcons();
+    }
+
+    function insertAtCursor(text) {
+      const textarea = document.getElementById('code-editor');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const val = textarea.value;
+
+      textarea.value = val.substring(0, start) + text + val.substring(end);
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + text.length;
+      handleCodeInput();
+    }
+
+    function handleCodeInput() {
+      updateLineNumbers();
+      localStorage.setItem('pseint_mobile_code', document.getElementById('code-editor').value);
+      renderFlowchart();
+    }
+
+    function updateLineNumbers() {
+      const lines = document.getElementById('code-editor').value.split('\n').length;
+      const lineContainer = document.getElementById('line-numbers');
+      let html = '';
+      for (let i = 1; i <= Math.max(lines, 1); i++) {
+        html += `<div>${i}</div>`;
+      }
+      lineContainer.innerHTML = html;
+    }
+
+    function syncScroll() {
+      const editor = document.getElementById('code-editor');
+      document.getElementById('line-numbers').scrollTop = editor.scrollTop;
+    }
+
+    function toggleDiagramType(type) {
+      currentDiagramType = type;
+      renderFlowchart();
+    }
+
+    function renderFlowchart() {
+      const code = document.getElementById('code-editor').value;
+      const container = document.getElementById('flowchart-container');
+      if (!container) return;
+
+      const lines = code.split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0 && !l.startsWith('//'));
+
+      const blocks = [];
+      let algoTitle = 'Algoritmo';
+
+      lines.forEach((line) => {
+        const lower = line.toLowerCase();
+        if (lower.startsWith('algoritmo ') || lower.startsWith('proceso ')) {
+          algoTitle = line.replace(/algoritmo|proceso/i, '').trim();
+          blocks.push({ type: 'start', text: `Inicio: ${algoTitle}` });
+        } else if (lower.startsWith('finalgoritmo') || lower.startsWith('finproceso')) {
+          blocks.push({ type: 'end', text: 'FinAlgoritmo' });
+        } else if (lower.startsWith('definir ')) {
+          blocks.push({ type: 'rect', text: line.replace(';', '') });
+        } else if (lower.startsWith('escribir ') || lower.startsWith('imprimir ')) {
+          blocks.push({ type: 'ioWrite', text: line.replace(';', '') });
+        } else if (lower.startsWith('leer ')) {
+          blocks.push({ type: 'ioRead', text: line.replace(';', '') });
+        } else if (lower.startsWith('si ') && lower.includes('entonces')) {
+          const cond = line.replace(/si/i, '').replace(/entonces/i, '').trim();
+          blocks.push({ type: 'diamond', text: cond });
+        } else if (lower.startsWith('sino')) {
+          blocks.push({ type: 'sino', text: '[SiNo]' });
+        } else if (lower.startsWith('finsi')) {
+          blocks.push({ type: 'finsi', text: '[FinSi]' });
+        } else if (lower.startsWith('para ')) {
+          blocks.push({ type: 'loop', text: line.replace(';', '') });
+        } else if (lower.startsWith('mientras ')) {
+          blocks.push({ type: 'loop', text: line.replace(';', '') });
+        } else if (line.includes('<-') || line.includes('=')) {
+          blocks.push({ type: 'rect', text: line.replace(';', '') });
+        }
+      });
+
+      if (blocks.length === 0) {
+        blocks.push({ type: 'start', text: 'Inicio' });
+        blocks.push({ type: 'end', text: 'FinAlgoritmo' });
+      }
+
+      if (currentDiagramType === 'ns') {
+        renderNassiShneiderman(blocks, container);
+        return;
+      }
+
+      // Dibujado del Diagrama de Flujo Clásico DIN/ANSI en SVG
+      const gap = 34;
+      let curY = 30;
+      let svgElements = '';
+
+      blocks.forEach((b, idx) => {
+        const centerX = 160;
+        const textLabel = escapeSvg(truncateText(b.text, 28));
+
+        if (b.type === 'start') {
+          svgElements += `
+            <g class="flow-node">
+              <rect x="${centerX - 75}" y="${curY}" width="150" height="38" rx="19" fill="#dcfce7" stroke="#15803d" stroke-width="2.2"/>
+              <text x="${centerX}" y="${curY + 23}" text-anchor="middle" font-weight="bold" fill="#14532d">${textLabel}</text>
+            </g>`;
+          curY += 38;
+        } else if (b.type === 'end') {
+          svgElements += `
+            <g class="flow-node">
+              <rect x="${centerX - 75}" y="${curY}" width="150" height="38" rx="19" fill="#fee2e2" stroke="#b91c1c" stroke-width="2.2"/>
+              <text x="${centerX}" y="${curY + 23}" text-anchor="middle" font-weight="bold" fill="#7f1d1d">${textLabel}</text>
+            </g>`;
+          curY += 38;
+        } else if (b.type === 'ioWrite') {
+          svgElements += `
+            <g class="flow-node">
+              <polygon points="${centerX - 105},${curY + 38} ${centerX - 80},${curY} ${centerX + 105},${curY} ${centerX + 80},${curY + 38}" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.8"/>
+              <text x="${centerX}" y="${curY + 23}" text-anchor="middle" fill="#1e3a8a">${textLabel}</text>
+              <polygon points="${centerX + 68},${curY + 12} ${centerX + 76},${curY + 16} ${centerX + 68},${curY + 20}" fill="#2563eb"/>
+            </g>`;
+          curY += 38;
+        } else if (b.type === 'ioRead') {
+          svgElements += `
+            <g class="flow-node">
+              <polygon points="${centerX - 95},${curY + 38} ${centerX - 75},${curY} ${centerX + 95},${curY} ${centerX + 75},${curY + 38}" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.8"/>
+              <text x="${centerX}" y="${curY + 23}" text-anchor="middle" fill="#0369a1">${textLabel}</text>
+              <polygon points="${centerX - 68},${curY + 16} ${centerX - 60},${curY + 12} ${centerX - 60},${curY + 20}" fill="#0284c7"/>
+            </g>`;
+          curY += 38;
+        } else if (b.type === 'diamond') {
+          svgElements += `
+            <g class="flow-node">
+              <polygon points="${centerX},${curY} ${centerX + 105},${curY + 25} ${centerX},${curY + 50} ${centerX - 105},${curY + 25}" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+              <text x="${centerX}" y="${curY + 29}" text-anchor="middle" font-weight="bold" fill="#713f12">${textLabel}</text>
+              <text x="${centerX + 95}" y="${curY + 18}" font-size="9" font-weight="bold" fill="#16a34a">V</text>
+              <text x="${centerX - 98}" y="${curY + 18}" font-size="9" font-weight="bold" fill="#dc2626">F</text>
+            </g>`;
+          curY += 50;
+        } else if (b.type === 'loop') {
+          svgElements += `
+            <g class="flow-node">
+              <polygon points="${centerX - 95},${curY + 19} ${centerX - 80},${curY} ${centerX + 80},${curY} ${centerX + 95},${curY + 19} ${centerX + 80},${curY + 38} ${centerX - 80},${curY + 38}" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+              <text x="${centerX}" y="${curY + 23}" text-anchor="middle" font-weight="bold" fill="#4c1d95">${textLabel}</text>
+            </g>`;
+          curY += 38;
+        } else if (b.type === 'sino' || b.type === 'finsi') {
+          svgElements += `
+            <g class="flow-node">
+              <circle cx="${centerX}" cy="${curY + 8}" r="7" fill="#334155" stroke="#64748b" stroke-width="1.5"/>
+            </g>`;
+          curY += 16;
+        } else {
+          svgElements += `
+            <g class="flow-node">
+              <rect x="${centerX - 90}" y="${curY}" width="180" height="38" rx="4" fill="#fef3c7" stroke="#b45309" stroke-width="1.8"/>
+              <text x="${centerX}" y="${curY + 23}" text-anchor="middle" fill="#78350f">${textLabel}</text>
+            </g>`;
+          curY += 38;
+        }
+
+        if (idx < blocks.length - 1) {
+          svgElements += `
+            <line x1="${centerX}" y1="${curY}" x2="${centerX}" y2="${curY + gap}" stroke="#475569" stroke-width="2" marker-end="url(#arrow-head)"/>`;
+          curY += gap;
+        }
+      });
+
+      const totalHeight = curY + 40;
+      const svgHTML = `
+        <svg id="pseint-diagram-svg" width="320" height="${totalHeight}" viewBox="0 0 320 ${totalHeight}" class="flow-svg select-none">
+          <defs>
+            <marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569" />
+            </marker>
+          </defs>
+          ${svgElements}
+        </svg>
+      `;
+
+      container.innerHTML = svgHTML;
+    }
+
+    function renderNassiShneiderman(blocks, container) {
+      let rows = '';
+      blocks.forEach(b => {
+        if (b.type === 'diamond') {
+          rows += `
+            <tr>
+              <td colspan="2" style="background:#fef08a; font-weight:bold; border-bottom:none;">¿ ${escapeHtml(b.text)} ?</td>
+            </tr>
+            <tr style="font-size:10px;">
+              <td style="width:50%; background:#dcfce7; color:#14532d; font-weight:bold;">VERDADERO</td>
+              <td style="width:50%; background:#fee2e2; color:#7f1d1d; font-weight:bold;">FALSO</td>
+            </tr>
+          `;
+        } else if (b.type === 'loop') {
+          rows += `
+            <tr>
+              <td colspan="2" style="background:#ede9fe; font-weight:bold; text-align:left; padding-left:14px;">↺ ${escapeHtml(b.text)}</td>
+            </tr>
+          `;
+        } else {
+          rows += `
+            <tr>
+              <td colspan="2" style="background:#f8fafc;">${escapeHtml(b.text)}</td>
+            </tr>
+          `;
+        }
+      });
+
+      container.innerHTML = `
+        <div class="ns-diagram p-3 bg-white rounded-xl shadow-xl text-slate-900">
+          <div class="text-xs font-bold text-center border-b border-slate-300 pb-1.5 mb-2 text-indigo-900 uppercase">
+            Diagrama Nassi-Shneiderman (N-S)
+          </div>
+          <table>${rows}</table>
+        </div>
+      `;
+    }
+
+    function zoomDiagram(delta) {
+      diagramZoom = Math.max(0.4, Math.min(2.0, diagramZoom + delta));
+      document.getElementById('flowchart-container').style.transform = `scale(${diagramZoom})`;
+    }
+
+    function resetDiagramZoom() {
+      diagramZoom = 1;
+      document.getElementById('flowchart-container').style.transform = 'scale(1)';
+    }
+
+    function truncateText(str, len) {
+      return str.length > len ? str.substring(0, len - 2) + '..' : str;
+    }
+
+    function escapeSvg(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function promptUserValue(varName) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('interactive-input-modal');
+        const promptLabel = document.getElementById('input-modal-prompt');
+        const valInput = document.getElementById('input-modal-value');
+        const submitBtn = document.getElementById('input-modal-submit-btn');
+
+        promptLabel.innerText = `Ingrese valor para la variable [${varName}]:`;
+        valInput.value = '';
+        modal.classList.remove('hidden');
+        valInput.focus();
+
+        const handleSubmit = () => {
+          const res = valInput.value.trim();
+          modal.classList.add('hidden');
+          submitBtn.removeEventListener('click', handleSubmit);
+          valInput.removeEventListener('keydown', handleKey);
+          resolve(res !== '' ? (isNaN(res) ? res : Number(res)) : 0);
+        };
+
+        const handleKey = (e) => {
+          if (e.key === 'Enter') handleSubmit();
+        };
+
+        submitBtn.addEventListener('click', handleSubmit);
+        valInput.addEventListener('keydown', handleKey);
+      });
+    }
+
+    async function executeCode() {
+      if (window.innerWidth < 768) {
+        switchTab('console');
+      }
+
+      const code = document.getElementById('code-editor').value;
+      const termMob = document.getElementById('terminal-output');
+      const termDesk = document.getElementById('terminal-output-desktop');
+      const traceMob = document.getElementById('trace-table-body');
+      const traceDesk = document.getElementById('trace-table-body-desktop');
+
+      const setOutputs = (html) => {
+        if (termMob) termMob.innerHTML = html;
+        if (termDesk) termDesk.innerHTML = html;
+      };
+
+      setOutputs('<div class="text-amber-300 font-mono">Iniciando ejecución de algoritmo...</div>');
+
+      const lines = code.split('\n');
+      let outputBuffer = [];
+      let memory = {};
+
+      try {
+        for (let idx = 0; idx < lines.length; idx++) {
+          const raw = lines[idx].trim();
+          if (!raw || raw.startsWith('//')) continue;
+          const lower = raw.toLowerCase();
+
+          // Declaración de variables
+          if (lower.startsWith('definir ')) {
+            const parts = raw.replace(/definir/i, '').split(/como/i);
+            if (parts.length === 2) {
+              const vars = parts[0].split(',').map(v => v.trim());
+              const tipo = parts[1].replace(';', '').trim().toUpperCase();
+              vars.forEach(v => {
+                if (v) memory[v] = { type: tipo, value: (tipo.includes('REAL') || tipo.includes('NUM') || tipo.includes('ENTERO')) ? 0 : '""' };
+              });
+            }
+          }
+
+          // Entrada con Leer
+          if (lower.startsWith('leer ')) {
+            const varName = raw.replace(/leer/i, '').replace(/;$/, '').trim();
+            const userVal = await promptUserValue(varName);
+            if (memory[varName]) {
+              memory[varName].value = userVal;
+            } else {
+              memory[varName] = { type: typeof userVal === 'number' ? 'REAL' : 'CADENA', value: userVal };
+            }
+            outputBuffer.push(`[ENTRADA] ${varName} = ${userVal}`);
+          }
+
+          // Asignación de variables
+          if (raw.includes('<-') || (raw.includes('=') && !lower.startsWith('si ') && !lower.startsWith('hasta'))) {
+            const delimiter = raw.includes('<-') ? '<-' : '=';
+            const parts = raw.split(delimiter);
+            const varName = parts[0].trim();
+            let expr = parts[1].replace(';', '').trim();
+
+            Object.keys(memory).forEach(k => {
+              const regex = new RegExp(`\\b${k}\\b`, 'g');
+              expr = expr.replace(regex, memory[k].value);
+            });
+
+            try {
+              const evaluated = Function(`"use strict"; return (${expr});`)();
+              const formatted = typeof evaluated === 'number' ? Number(evaluated.toFixed(2)) : evaluated;
+              if (memory[varName]) {
+                memory[varName].value = formatted;
+              } else {
+                memory[varName] = { type: typeof evaluated === 'number' ? 'REAL' : 'CADENA', value: formatted };
+              }
+            } catch (err) {
+              if (memory[varName]) memory[varName].value = expr;
+            }
+          }
+
+          // Salida con Escribir
+          if (lower.startsWith('escribir ') || lower.startsWith('imprimir ')) {
+            let outText = raw.replace(/escribir|imprimir/i, '').replace(/;$/, '').trim();
+            Object.keys(memory).forEach(k => {
+              const regex = new RegExp(`\\b${k}\\b`, 'g');
+              outText = outText.replace(regex, memory[k].value);
+            });
+            outText = outText.replace(/["']/g, '');
+            outputBuffer.push(`> ${outText}`);
+          }
+        }
+
+        const outHTML = outputBuffer.length > 0
+          ? outputBuffer.map(msg => `<div>${escapeHtml(msg)}</div>`).join('')
+          : '<div class="text-emerald-400">Algoritmo finalizado con éxito.</div>';
+
+        setOutputs(outHTML);
+
+        // Actualización de la prueba de escritorio
+        const varKeys = Object.keys(memory);
+        const rowsHTML = varKeys.length === 0
+          ? '<tr><td colspan="3" class="py-2 text-center text-slate-500">Sin variables registradas</td></tr>'
+          : varKeys.map(k => `
+            <tr class="border-b border-slate-800/80">
+              <td class="py-1.5 font-bold text-indigo-300">${escapeHtml(k)}</td>
+              <td class="py-1.5 text-slate-400 text-[10px]">${memory[k].type}</td>
+              <td class="py-1.5 text-right font-bold text-emerald-400">${memory[k].value}</td>
+            </tr>
+          `).join('');
+
+        if (traceMob) traceMob.innerHTML = rowsHTML;
+        if (traceDesk) traceDesk.innerHTML = rowsHTML;
+
+      } catch (err) {
+        setOutputs(`<div class="text-rose-400">Error durante la ejecución: ${escapeHtml(err.message)}</div>`);
+      }
+    }
+
+    function clearConsole() {
+      const emptyMsg = '<div class="text-slate-500">// Consola limpia. Presiona "Ejecutar".</div>';
+      const emptyTable = '<tr><td colspan="3" class="py-2 text-center text-slate-600">Sin datos</td></tr>';
+      document.getElementById('terminal-output').innerHTML = emptyMsg;
+      document.getElementById('terminal-output-desktop').innerHTML = emptyMsg;
+      document.getElementById('trace-table-body').innerHTML = emptyTable;
+      document.getElementById('trace-table-body-desktop').innerHTML = emptyTable;
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function loadTemplate(type) {
+      if (!type) return;
+      let snippet = '';
+      if (type === 'secuencial') {
+        snippet = `Algoritmo CalculoArea
+    Definir base, altura, area Como Real;
+    Escribir "Ingrese la base del triangulo:";
+    Leer base;
+    Escribir "Ingrese la altura del triangulo:";
+    Leer altura;
+    area <- (base * altura) / 2;
+    Escribir "El area total es: ", area;
+FinAlgoritmo`;
+      } else if (type === 'condicional') {
+        snippet = `Algoritmo MayorDeEdad
+    Definir edad Como Entero;
+    Escribir "Ingrese su edad:";
+    Leer edad;
+    Si edad >= 18 Entonces
+        Escribir "Eres mayor de edad ante la ley.";
+    SiNo
+        Escribir "Aun eres menor de edad.";
+    FinSi
+FinAlgoritmo`;
+      } else if (type === 'segun') {
+        snippet = `Algoritmo MenuDiaSemana
+    Definir dia Como Entero;
+    Escribir "Ingrese dia (1 a 3):";
+    Leer dia;
+    Segun dia Hacer
+        1: Escribir "Lunes de Algoritmos";
+        2: Escribir "Martes de Laboratorio";
+        3: Escribir "Miercoles de Teoria";
+        De Otro Modo:
+            Escribir "Dia no valido";
+    FinSegun
+FinAlgoritmo`;
+      } else if (type === 'repetitiva_para') {
+        snippet = `Algoritmo TablaMultiplicar
+    Definir n, i, producto Como Entero;
+    Escribir "Ingrese la tabla que desea ver:";
+    Leer n;
+    Para i <- 1 Hasta 10 Con Paso 1 Hacer
+        producto <- n * i;
+        Escribir n, " x ", i, " = ", producto;
+    FinPara
+FinAlgoritmo`;
+      } else if (type === 'repetitiva_mientras') {
+        snippet = `Algoritmo CuentaRegresiva
+    Definir contador Como Entero;
+    contador <- 5;
+    Mientras contador > 0 Hacer
+        Escribir "Lanzamiento en: ", contador;
+        contador <- contador - 1;
+    FinMientras
+    Escribir "¡Despegue!";
+FinAlgoritmo`;
+      }
+      document.getElementById('code-editor').value = snippet;
+      handleCodeInput();
+      document.getElementById('template-select').value = '';
+    }
+
+    function loadChallenge(challengeKey) {
+      let code = '';
+      if (challengeKey === 'u1_salario') {
+        code = `Algoritmo CalculoSalarioNeto
+    // Reto U1 - Semanas 1 a 6
+    Definir horas Como Entero;
+    Definir tarifa, salarioBruto, descuento, salarioNeto Como Real;
+
+    Escribir "Ingrese las horas trabajadas en el mes:";
+    Leer horas;
+    Escribir "Ingrese la tarifa por hora:";
+    Leer tarifa;
+
+    salarioBruto <- horas * tarifa;
+    descuento <- salarioBruto * 0.10;
+    salarioNeto <- salarioBruto - descuento;
+
+    Escribir "Salario Bruto: S/ ", salarioBruto;
+    Escribir "Descuento de Ley (10%): S/ ", descuento;
+    Escribir "Salario Neto a Pagar: S/ ", salarioNeto;
+FinAlgoritmo`;
+      } else if (challengeKey === 'u1_temp') {
+        code = `Algoritmo ConversorTemperatura
+    // Reto U1 - Semanas 1 a 6
+    Definir celsius, fahrenheit, kelvin Como Real;
+
+    Escribir "Ingrese la temperatura en grados Celsius:";
+    Leer celsius;
+
+    fahrenheit <- (celsius * 9 / 5) + 32;
+    kelvin <- celsius + 273.15;
+
+    Escribir "Temperatura en Fahrenheit: ", fahrenheit, " °F";
+    Escribir "Temperatura en Kelvin: ", kelvin, " K";
+FinAlgoritmo`;
+      } else if (challengeKey === 'u2_notas') {
+        code = `Algoritmo EvaluacionNota
+    // Reto U2 - Semanas 7 a 12
+    Definir nota Como Real;
+
+    Escribir "Ingrese la calificacion final (0 - 20):";
+    Leer nota;
+
+    Si nota >= 18 Entonces
+        Escribir "Rendimiento: EXCELENTE";
+    SiNo
+        Si nota >= 14 Entonces
+            Escribir "Rendimiento: BUENO";
+        SiNo
+            Si nota >= 11 Entonces
+                Escribir "Rendimiento: REGULAR";
+            SiNo
+                Escribir "Rendimiento: REPROBADO";
+            FinSi
+        FinSi
+    FinSi
+FinAlgoritmo`;
+      } else if (challengeKey === 'u2_menu') {
+        code = `Algoritmo MenuCalculadora
+    // Reto U2 - Semanas 7 a 12
+    Definir opcion Como Entero;
+    Definir num1, num2, resultado Como Real;
+
+    Escribir "Ingrese el primer numero:";
+    Leer num1;
+    Escribir "Ingrese el segundo numero:";
+    Leer num2;
+
+    Escribir "Seleccione operacion: 1.Suma 2.Resta 3.Multiplicacion";
+    Leer opcion;
+
+    Segun opcion Hacer
+        1: resultado <- num1 + num2; Escribir "Suma: ", resultado;
+        2: resultado <- num1 - num2; Escribir "Resta: ", resultado;
+        3: resultado <- num1 * num2; Escribir "Producto: ", resultado;
+        De Otro Modo:
+            Escribir "Opcion no valida.";
+    FinSegun
+FinAlgoritmo`;
+      } else if (challengeKey === 'u3_pares') {
+        code = `Algoritmo ConteoParesImpares
+    // Reto U3 - Semanas 13 a 18
+    Definir n, i, valor, pares, impares Como Entero;
+    pares <- 0;
+    impares <- 0;
+
+    Escribir "¿Cuantos numeros desea evaluar?:";
+    Leer n;
+
+    Para i <- 1 Hasta n Con Paso 1 Hacer
+        Escribir "Ingrese numero ", i, ":";
+        Leer valor;
+        Si valor % 2 = 0 Entonces
+            pares <- pares + 1;
+        SiNo
+            impares <- impares + 1;
+        FinSi
+    FinPara
+
+    Escribir "Total de numeros pares: ", pares;
+    Escribir "Total de numeros impares: ", impares;
+FinAlgoritmo`;
+      } else if (challengeKey === 'u3_clave') {
+        code = `Algoritmo ValidacionAcceso
+    // Reto U3 - Semanas 13 a 18
+    Definir clave, claveCorrecta Como Entero;
+    Definir intentos Como Entero;
+    claveCorrecta <- 2026;
+    intentos <- 3;
+
+    Mientras intentos > 0 Hacer
+        Escribir "Ingrese su clave de acceso (Tiene ", intentos, " intentos):";
+        Leer clave;
+        Si clave = claveCorrecta Entonces
+            Escribir "¡Acceso concedido al sistema Aethell!";
+            intentos <- 0;
+        SiNo
+            intentos <- intentos - 1;
+            Si intentos = 0 Entonces
+                Escribir "Cuenta bloqueada por seguridad.";
+            SiNo
+                Escribir "Clave errada. Vuelva a intentar.";
+            FinSi
+        FinSi
+    FinMientras
+FinAlgoritmo`;
+      }
+
+      document.getElementById('code-editor').value = code;
+      handleCodeInput();
+      switchTab('editor');
+    }
+
+    function runAutoTestForCurrent() {
+      const banner = document.getElementById('test-results-banner');
+      const code = document.getElementById('code-editor').value.toLowerCase();
+
+      let passed = 0;
+      let total = 3;
+      let logs = [];
+
+      if (code.includes('algoritmo') && code.includes('finalgoritmo')) {
+        passed++;
+        logs.push('✔ Estructura general de algoritmo válida.');
+      } else {
+        logs.push('✖ Falta Algoritmo o FinAlgoritmo.');
+      }
+
+      if (code.includes('definir ') && code.includes('como ')) {
+        passed++;
+        logs.push('✔ Tipado de variables con Definir detectado.');
+      } else {
+        logs.push('✖ Recomendado: Usa Definir para tus variables.');
+      }
+
+      if (code.includes('escribir') || code.includes('imprimir')) {
+        passed++;
+        logs.push('✔ Salida de datos configurada correctamente.');
+      } else {
+        logs.push('✖ No se detectó ninguna instrucción Escribir.');
+      }
+
+      banner.classList.remove('hidden');
+      banner.innerHTML = `
+        <div class="font-bold ${passed === total ? 'text-emerald-400' : 'text-amber-400'} mb-1">
+          Resultado de Pruebas Unitarias: ${passed} / ${total} aprobadas (${Math.round((passed/total)*100)}%)
+        </div>
+        <div class="space-y-0.5 text-slate-300">${logs.map(l => `<div>${l}</div>`).join('')}</div>
+      `;
+    }
+
+    function downloadPscFile() {
+      const code = document.getElementById('code-editor').value;
+      const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'algoritmo.psc';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function handleOpenLocalFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('code-editor').value = e.target.result;
+        handleCodeInput();
+      };
+      reader.readAsText(file);
+    }
+
+    async function shareDirectAndroid() {
+      const code = document.getElementById('code-editor').value;
+      const shareData = {
+        title: 'PSeInt Mobile - Aethell Labs',
+        text: `*Algoritmo PSeInt (Aethell Labs):*\n\n\`\`\`\n${code}\n\`\`\`\n\nDesarrollado en PSeInt Mobile Android.`,
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (e) {}
+      } else {
+        const textMessage = `*¡Hola! Te comparto mi algoritmo de PSeInt:*\n\n\`\`\`\n${code.slice(0, 900)}\n\`\`\`\n\n_Generado con PSeInt Mobile (Aethell Labs)_`;
+        const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(textMessage)}`;
+        window.open(waUrl, '_blank');
+      }
+    }
+
+    function openExportModal() {
+      document.getElementById('export-modal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    async function generateAcademicPDF() {
+      const downloadBtn = document.getElementById('download-pdf-btn');
+      downloadBtn.innerText = 'Generando...';
+      downloadBtn.disabled = true;
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        const studentName = document.getElementById('pdf-student-name').value || 'Estudiante';
+        const course = document.getElementById('pdf-course').value || 'Algoritmos y Programación';
+        const week = document.getElementById('pdf-week').value || 'Semana Regular';
+        const hasWatermark = document.getElementById('pdf-watermark-check').checked;
+        const code = document.getElementById('code-editor').value;
+
+        // Membrete universitario
+        doc.setFillColor(30, 27, 75);
+        doc.rect(0, 0, 210, 36, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text('AETHELL LABS • INFORME ACADÉMICO', 15, 15);
+
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(199, 210, 254);
+        doc.text('Laboratorio de Algoritmos y Estructuras de Datos | PSeInt Studio Mobile', 15, 22);
+
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`Alumno: ${studentName}`, 15, 30);
+        doc.text(`Curso: ${course}`, 95, 30);
+        doc.text(`Unidad: ${week}`, 160, 30);
+
+        if (hasWatermark) {
+          doc.saveGraphicsState();
+          doc.setTextColor(230, 235, 245);
+          doc.setFontSize(36);
+          doc.setFont('helvetica', 'bold');
+          doc.text('AETHELL LABS', 45, 145, { angle: 45 });
+          doc.restoreGraphicsState();
+        }
+
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('1. Código Fuente en Pseudocódigo (PSeInt)', 15, 46);
+
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(203, 213, 225);
+        doc.roundedRect(15, 50, 180, 95, 2, 2, 'FD');
+
+        doc.setFont('courier', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(30, 41, 59);
+
+        const codeLines = doc.splitTextToSize(code, 172);
+        doc.text(codeLines.slice(0, 30), 18, 56);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text('2. Representación Gráfica (Diagrama PSeInt)', 15, 155);
+
+        const svgElement = document.getElementById('pseint-diagram-svg');
+        if (svgElement) {
+          const svgData = new XMLSerializer().serializeToString(svgElement);
+          const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+          const blobURL = URL.createObjectURL(svgBlob);
+
+          const img = new Image();
+          await new Promise((resolve) => {
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width * 2;
+              canvas.height = img.height * 2;
+              const ctx = canvas.getContext('2d');
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+              const imgData = canvas.toDataURL('image/png');
+              doc.addImage(imgData, 'PNG', 15, 160, 180, 115, undefined, 'FAST');
+              resolve();
+            };
+            img.src = blobURL;
+          });
+        }
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 116, 139);
+        const today = new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
+        doc.text(`Documento generado el ${today} con PSeInt Mobile (Aethell Labs) para evaluación académica.`, 15, 288);
+        doc.text('Página 1 de 1', 180, 288);
+
+        doc.save(`Algoritmo_${studentName.replace(/\s+/g, '_')}_AethellLabs.pdf`);
+        closeModal('export-modal');
+      } catch (err) {
+        console.error('Error al generar PDF:', err);
+      } finally {
+        downloadBtn.innerText = 'Descargar PDF Listo';
+        downloadBtn.disabled = false;
+      }
+    }
+
+    function openAITutorModal() {
+      document.getElementById('ai-modal').classList.remove('hidden');
+    }
+
+    function askAI(type) {
+      let query = '';
+      let response = '';
+
+      if (type === 'explicar_error') {
+        query = '¿Por qué podría fallar mi algoritmo?';
+        response = `
+          <strong>Diagnóstico Pedagógico Aethell:</strong><br><br>
+          1. <em>Condiciones en bucles:</em> Verifica que la variable de control cambie dentro de tu ciclo <code class="text-indigo-300">Mientras</code>. Si nunca varía, el ciclo será infinito.<br>
+          2. <em>Variables no inicializadas:</em> Los acumuladores de suma deben comenzar en 0 (<code class="text-indigo-300">suma &lt;- 0</code>) y los contadores en 1.<br>
+          3. <em>Tipos de datos:</em> Si definiste una variable como <code class="text-indigo-300">Entero</code>, no le asignes cadenas de texto.
+        `;
+      } else if (type === 'pistas') {
+        query = 'Dame pistas sin resolverme la tarea';
+        response = `
+          <strong>Pistas Socráticas (Modo Estudio):</strong><br><br>
+          • Identifica tus <strong>Entradas</strong> (datos con <code class="text-indigo-300">Leer</code>) y tus <strong>Salidas</strong> esperadas.<br>
+          • Si requieres evaluar rangos de notas, usa condicionales anidados (<code class="text-purple-300">Si-Entonces-SiNo</code>).<br>
+          • Para promedios o porcentajes, recuerda usar paréntesis para respetar la prioridad de operadores matemáticos.
+        `;
+      } else if (type === 'traducir_cpp') {
+        query = 'Traducir pseudocódigo a C++';
+        response = `
+          <strong>Equivalente en C++:</strong><br>
+          <pre class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[11px] text-indigo-200 mt-2 font-mono">
+#include &lt;iostream&gt;
+using namespace std;
+
+int main() {
+    // Generado por PSeInt Aethell Mobile
+    double nota1, nota2, nota3, promedio;
+    cout &lt;&lt; "Ingrese notas: ";
+    cin &gt;&gt; nota1 &gt;&gt; nota2 &gt;&gt; nota3;
+    promedio = (nota1 + nota2 + nota3) / 3.0;
+
+    if (promedio &gt;= 11.5) {
+        cout &lt;&lt; "Aprobado: " &lt;&lt; promedio &lt;&lt; endl;
+    } else {
+        cout &lt;&lt; "Desaprobado: " &lt;&lt; promedio &lt;&lt; endl;
+    }
+    return 0;
+}</pre>`;
+      } else if (type === 'traducir_py') {
+        query = 'Traducir pseudocódigo a Python 3';
+        response = `
+          <strong>Equivalente en Python 3:</strong><br>
+          <pre class="bg-slate-950 p-2 rounded-lg border border-slate-800 text-[11px] text-emerald-200 mt-2 font-mono">
+# Generado por PSeInt Aethell Mobile
+def principal():
+    nota1 = float(input("Ingrese nota 1: "))
+    nota2 = float(input("Ingrese nota 2: "))
+    nota3 = float(input("Ingrese nota 3: "))
+
+    promedio = (nota1 + nota2 + nota3) / 3.0
+
+    if promedio &gt;= 11.5:
+        print(f"Aprobado con: {promedio:.2f}")
+    else:
+        print(f"Desaprobado con: {promedio:.2f}")
+
+if __name__ == "__main__":
+    principal()</pre>`;
+      }
+
+      appendChatMessage(query, response);
+    }
+
+    function askAICustom() {
+      const input = document.getElementById('ai-user-prompt');
+      const query = input.value.trim();
+      if (!query) return;
+
+      input.value = '';
+      const response = `
+        <strong>Respuesta del Tutor Aethell:</strong><br><br>
+        En relación a tu consulta <em>"${escapeHtml(query)}"</em>: El pilar en algoritmia es realizar siempre la <strong>Prueba de Escritorio</strong> antes de codificar. Verifica que cada rama de decisión contemple todos los casos frontera y que las variables acumuladoras estén debidamente inicializadas.
+      `;
+      appendChatMessage(query, response);
+    }
+
+    function appendChatMessage(user, ai) {
+      const chatBody = document.getElementById('ai-chat-body');
+      const html = `
+        <div class="flex justify-end">
+          <div class="bg-indigo-600 text-white p-2.5 rounded-xl max-w-[80%]">
+            ${escapeHtml(user)}
+          </div>
+        </div>
+        <div class="flex gap-2.5 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
+          <div class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center shrink-0 text-white text-[10px]">
+            Ψ
+          </div>
+          <div class="space-y-1 leading-relaxed flex-1">
+            ${ai}
+          </div>
+        </div>
+      `;
+      chatBody.innerHTML += html;
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function setupDynamicManifest() {
+      const manifestData = {
+        name: "PSeInt",
+        short_name: "PSeInt",
+        start_url: ".",
+        display: "standalone",
+        orientation: "portrait",
+        background_color: "#020617",
+        theme_color: "#0f172a",
+        description: "Entorno Universitario de Algoritmos PSeInt",
+        icons: [
+          {
+            src: "https://placehold.co/192x192/4f46e5/ffffff?text=Ψ",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "https://placehold.co/512x512/4f46e5/ffffff?text=Ψ",
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+      document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(blob));
+    }
+
+    function registerOfflineServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          self.addEventListener('install', (e) => self.skipWaiting());
+          self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
+          self.addEventListener('fetch', (e) => {
+            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+          });
+        `;
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+      }
+    }
+  </script>
+</body>
+</html>
