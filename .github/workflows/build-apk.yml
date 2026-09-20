@@ -1,5 +1,5 @@
 name: Build APK
-'on':
+on:
 push:
 branches:
 - main
@@ -11,33 +11,27 @@ runs-on: ubuntu-latest
 steps:
 - name: Checkout
 uses: actions/checkout@v4
-- name: Setup Node
+- name: Node
 uses: actions/setup-node@v4
 with:
 node-version: 20
-- name: Setup Java
+- name: Java
 uses: actions/setup-java@v4
 with:
 distribution: zulu
 java-version: 17
-- name: Init Node Project
-run: npm init -y
-- name: Install Capacitor
-run: npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-- name: Create Web Dir
-run: mkdir -p www
-- name: Copy HTML
-run: cp index.html www/index.html
-- name: Init Capacitor Config
-run: npx cap init PSeInt com.aethell.pseint --web-dir www
-- name: Add Android Platform
-run: npx cap add android
-- name: Make Gradlew Executable
-run: chmod +x android/gradlew
-- name: Build Debug APK
-working-directory: android
-run: ./gradlew assembleDebug
-- name: Upload APK
+- name: Build
+run: |
+npm init -y
+npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+mkdir -p www
+cp index.html www/index.html
+npx cap init PSeInt com.aethell.pseint --web-dir www
+npx cap add android
+cd android
+chmod +x gradlew
+./gradlew assembleDebug
+- name: Upload
 uses: actions/upload-artifact@v4
 with:
 name: PSeInt-APK
