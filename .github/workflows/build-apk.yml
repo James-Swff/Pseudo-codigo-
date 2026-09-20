@@ -1,44 +1,39 @@
-name: Compilar PSeInt APK para Android
+name: Compilar PSeInt APK
 ​on:
 push:
 branches: [ main, master ]
 workflow_dispatch:
 ​jobs:
 build:
-name: Compilación de APK Android
+name: Compilación APK
 runs-on: ubuntu-latest
 ​steps:
 - name: Clonar repositorio
 uses: actions/checkout@v4
-​- name: Configurar Node.js 20
+​- name: Configurar Node.js
 uses: actions/setup-node@v4
 with:
 node-version: 20
-​- name: Configurar Java 17
+​- name: Configurar Java
 uses: actions/setup-java@v4
 with:
 distribution: 'zulu'
 java-version: 17
-​- name: Aceptar licencias de Android SDK
-run: |
-yes | sdkmanager --licenses || true
-​- name: Inicializar proyecto nativo Capacitor
+​- name: Preparar proyecto Android
 run: |
 npm init -y
-npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2
+npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
 mkdir -p www
 cp index.html www/index.html
-npx cap init "PSeInt" "com.aethell.pseint" --web-dir www
+npx cap init PSeInt com.aethell.pseint --web-dir=www
 npx cap add android
-npx cap sync android
-​- name: Compilar archivo APK con Gradle
+​- name: Compilar APK con Gradle
 run: |
 cd android
 chmod +x gradlew
-./gradlew assembleDebug --stacktrace
-​- name: Subir APK generado
+./gradlew assembleDebug
+​- name: Subir instalador APK
 uses: actions/upload-artifact@v4
 with:
-name: PSeInt-Android-APK
+name: PSeInt-APK
 path: android/app/build/outputs/apk/debug/app-debug.apk
-retention-days: 14
