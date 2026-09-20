@@ -5,34 +5,20 @@ branches: [ main, master ]
 workflow_dispatch:
 ​jobs:
 build:
-name: Compilación APK
+name: Compilar APK
 runs-on: ubuntu-latest
-​steps:
-- name: Clonar repositorio
-uses: actions/checkout@v4
-​- name: Configurar Node.js
-uses: actions/setup-node@v4
+steps:
+- uses: actions/checkout@v4
+- uses: actions/setup-node@v4
 with:
 node-version: 20
-​- name: Configurar Java
-uses: actions/setup-java@v4
+- uses: actions/setup-java@v4
 with:
-distribution: 'zulu'
+distribution: zulu
 java-version: 17
-​- name: Preparar proyecto Android
-run: |
-npm init -y
-npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-mkdir -p www
-cp index.html www/index.html
-npx cap init PSeInt com.aethell.pseint --web-dir=www
-npx cap add android
-​- name: Compilar APK con Gradle
-run: |
-cd android
-chmod +x gradlew
-./gradlew assembleDebug
-​- name: Subir instalador APK
+- name: Preparar y Compilar APK
+run: npm init -y && npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 && mkdir -p www && cp index.html www/index.html && npx cap init PSeInt com.aethell.pseint --web-dir=www && npx cap add android && cd android && chmod +x gradlew && ./gradlew assembleDebug
+- name: Subir APK
 uses: actions/upload-artifact@v4
 with:
 name: PSeInt-APK
